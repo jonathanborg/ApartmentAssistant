@@ -38,10 +38,10 @@ def find_element(selenium_item, selection_type, selector_name: str, friendly_nam
         if type_cast == 'int':
             found_object = int(found_object)
         elif type_cast == 'bool':
-            found_object = True if found_object.lower() == 'yes' else False if found_object.lower() == 'no' else None
+            found_object = True if found_object.lower() == 'yes' else False if found_object.lower() == 'no' else ''
     except NoSuchElementException as nsex:
         print(f" - {friendly_name} not available")
-        return None
+        return ''
     except Exception as ex:
         print(ex)
         raise ex

@@ -5,7 +5,8 @@ import hyperlink
 import pandas as pd
 # from csv import writer
 # from bs4 import BeautifulSoup
-from helper import Listing
+from class_helper import Listing
+from dateutil.relativedelta import relativedelta
 from selenium_helper import initiate_selenium, find_element
 from datetime import date, datetime, timedelta
 from selenium.webdriver.common.by import By 
@@ -25,7 +26,7 @@ HOME_PAGE = "https://www.pararius.com"
 
 def __get_total_pages(driver):
     all_pages = driver.find_elements(By.CLASS_NAME, "pagination__link")
-    total_pages = max([int(x.get_attribute("textContent")) for x in all_pages if x.text.isdigit()])
+    total_pages = max([int(x.get_attribute("textContent")) for x in all_pages if x.text.isdigit()]) if len(all_pages) > 0 else 1
     return total_pages
 
 
@@ -73,10 +74,12 @@ def __get_listing_content(listing):
     surface_area = find_element(listing, By.CSS_SELECTOR, ".illustrated-features__item--surface-area", friendly_name='Surface Area', attribute="textContent", remove_strs=[' m²'])
     number_of_rooms = find_element(listing, By.CSS_SELECTOR, ".illustrated-features__item--number-of-rooms", friendly_name="Number of Rooms", attribute="textContent", type_cast="int", remove_strs=['room', 's'])
     for_rent_price = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--for_rent_price > .listing-features__main-description", friendly_name="For Rent Price", attribute="textContent", type_cast="int", remove_strs=[' per month', ',', '€'])
-    description = find_element(listing, By.CLASS_NAME, "listing-detail-description__additional", friendly_name="Description", attribute="text", remove_strs=['Description\n'])
-    offered_since = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--offered_since > .listing-features__main-description", friendly_name="Offered Since", attribute="textContent")
-    if 'weeks' in offered_since:
+    description = find_element(listing, By.CLASS_NAME, "listing-detail-description__additional", friendly_name="Description", attribute="text", remove_strs=['Description\n', ('\n',' - '), ('\t',' ')])
+    offered_since = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--offered_since > .listing-features__main-description", friendly_name="Offered Since", attribute="textContent", remove_strs=['+'])
+    if 'week' in offered_since:
         offered_since = date.today() - timedelta(weeks=int(offered_since.replace("week", "").replace("s", "").strip()))
+    elif 'month' in offered_since:
+        offered_since = date.today() - relativedelta(months=+int(offered_since.replace("month", "").replace("s", "").strip()))
     else:
         offered_since = datetime.strptime(offered_since, '%d-%m-%Y').date()
     
@@ -96,7 +99,7 @@ def __get_listing_content(listing):
     upkeep, situations, sub_description, contract_duration, deposit = [None] * 5
 
     upkeep = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--upkeep > .listing-features__main-description", friendly_name="Upkeep", attribute="textContent")
-    situations = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--situations > .listing-features__main-description", friendly_name="Situations", attribute="textContent")
+    situations = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--situations > .listing-features__main-description", friendly_name="Situations", attribute="textContent", remove_strs=[('\n',' - '), ('\t',' ')])
     sub_description = find_element(listing, By.CSS_SELECTOR, ".listing-features__sub-description > li", friendly_name="Sub Description", attribute="textContent")
     contract_duration = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--contract_duration > .listing-features__main-description", friendly_name="Contract Duration", attribute="textContent")
     deposit = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--deposit > .listing-features__main-description", friendly_name="Deposit", type_cast="int", attribute="textContent", remove_strs=[',', '€'])
@@ -110,7 +113,7 @@ def __get_listing_content(listing):
     number_of_bedrooms = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--number_of_bedrooms > .listing-features__main-description", friendly_name="Number of Bedrooms", type_cast="int", attribute="textContent")
     number_of_bathrooms = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--number_of_bathrooms > .listing-features__main-description", friendly_name="Number of Bathrooms", type_cast="int", attribute="textContent")
     number_of_floors = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--number_of_floors > .listing-features__main-description", friendly_name="Number of Floors", type_cast="int", attribute="textContent")
-    facilities = find_element(listing, By.CSS_SELECTOR, '[class^="listing-features__description listing-features__description--facilities"]', friendly_name="Facilities", attribute="textContent", remove_strs=[' ', ('\n', '; ')], strip_char='; ')
+    facilities = find_element(listing, By.CSS_SELECTOR, '[class^="listing-features__description listing-features__description--facilities"]', friendly_name="Facilities", attribute="textContent", remove_strs=[' ', ('\n', '; '), '\t'], strip_char='; ')
     balcony = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--balcony > .listing-features__main-description", friendly_name="Balcony", type_cast="bool", attribute="textContent")
     garden = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--garden > .listing-features__main-description", friendly_name="Garden",type_cast="bool", attribute="textContent")
     storage = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--storage > .listing-features__main-description", friendly_name="Storage", type_cast="bool", attribute="textContent")
@@ -149,7 +152,7 @@ def get_saved_pararius_data(old_file_name: str):
     return None
 
 
-def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_file_name: str=None) -> pd.DataFrame:
+def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_listings: pd.DataFrame=None) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
     driver = initiate_selenium()
     
@@ -164,7 +167,7 @@ def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_fi
         if i > 1:
             url = f'{pararius_url}page-{i+1}'
             driver.get(url)
-        page_listings = __get_page_content(driver, get_saved_pararius_data(old_file_name))
+        page_listings = __get_page_content(driver, old_listings)
         all_listings_tsv += page_listings
     driver.close()
     return pd.DataFrame(all_listings_tsv, columns=Listing.header().split(', '))

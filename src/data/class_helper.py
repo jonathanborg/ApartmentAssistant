@@ -1,4 +1,3 @@
-import os.path
 import datetime
 from enum import Enum
 
@@ -9,7 +8,8 @@ class Sources(Enum):
 
 
 class Locations(Enum):
-    Breda=1
+    Breda=1,
+    Roosendaal=2
 
 
 class ListingProp(Enum):
@@ -42,22 +42,6 @@ class ListingProp(Enum):
     Brokerage_Firm=23,
     Brokerage_Firm_link=24,
     Log_Id=25,
-
-
-def get_file_path():
-    return "./data/external/"
-
-
-def get_file_name(source: Enum, location: str) -> str:
-    today_str = datetime.datetime.today().strftime('%Y%m%d')
-    directory = f'{get_file_path()}{location}/' 
-    output = f'{directory}{source.name}_{today_str}.csv'.lower()
-    os.makedirs(os.path.dirname(directory), exist_ok=True)
-    return output
-
-
-def file_exists(file_path):
-    return os.path.isfile(file_path)
 
 
 class Listing():
