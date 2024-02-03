@@ -3,6 +3,8 @@ ApartmentAssistant
 
 Repository to help find information about possible apartments, locations and their respective pricing
 
+Integration: - Google Sheets API from the github repository (https://github.com/jonathanborg/GoogleSheetsApi)
+
 Project Organization
 ------------
 

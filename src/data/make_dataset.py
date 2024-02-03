@@ -1,19 +1,49 @@
 # -*- coding: utf-8 -*-
 import click
 import logging
+import pandas as pd
 from pathlib import Path
+from scrappers.pararius import get_pararius_data
+from funda import FundaData, __FundaParseData
+from helper import Locations, Sources, get_file_name, file_exists
 from dotenv import find_dotenv, load_dotenv
 
 
-@click.command()
-@click.argument('input_filepath', type=click.Path(exists=True))
-@click.argument('output_filepath', type=click.Path())
-def main(input_filepath, output_filepath):
+def save_external_data_locally(data: pd.DataFrame, input_location: str, max_price: int, filename: str):
+    # FundaData(location=input_location, max_price=max_price, filepath=filename)
+    data.to_csv(filename, sep="\t", header=True, index=False) 
+
+
+def process_data(file_name: str):
+    # funda_df = __FundaParseData(pd.read_csv(file_name))
+    print()
+    # TODO: Fix this
+
+
+def main(input_location: str, max_price: int):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
     logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
+    logger.info('Making final data set from raw data')
+
+    logger.info('--- Pararius Data')
+    pararius_file_name = get_file_name(source=Sources.Pararius, location=input_location)
+    
+    # TODO: Fix this
+    if not file_exists(pararius_file_name):
+        pararius_data = get_pararius_data(location=input_location, max_price=max_price)
+        save_external_data_locally(data=pararius_data, input_location=input_location, max_price=max_price, filename=pararius_file_name)
+    else:
+        process_data(pararius_file_name)
+
+    logger.info('--- Funda Data')
+    funda_file_name = get_file_name(source=Sources.Funda, location=input_location)
+    if not file_exists(funda_file_name):
+        save_external_data(input_location=input_location, max_price=max_price, filename=funda_file_name)
+    else:
+        process_data(funda_file_name)
+    return
 
 
 if __name__ == '__main__':
@@ -27,4 +57,4 @@ if __name__ == '__main__':
     # load up the .env entries as environment variables
     load_dotenv(find_dotenv())
 
-    main()
+    main(Locations.Breda.name, 1500)
