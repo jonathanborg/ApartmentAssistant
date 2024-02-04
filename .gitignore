@@ -158,5 +158,16 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Google API tokens
 credentials.json
 token.json
+
+# Data 
+data/external/
+# Outdated functionality 
+OLD/
+# Selenium Setup
+selenium/
+# Google API Integration - found on Github
+src/data/integration/
