@@ -1,3 +1,4 @@
+import re
 from selenium import webdriver 
 from selenium.webdriver import Chrome 
 from selenium.webdriver.common.by import By 
@@ -32,15 +33,16 @@ def find_element(selenium_item, selection_type, selector_name: str, friendly_nam
                     found_object = found_object.replace(remove_str[0], remove_str[1])
                 else:
                     found_object = found_object.replace(remove_str, "")
+        found_object = re.sub("\s\s+" , " ", found_object)
         found_object = found_object.strip()
         if strip_char is not None:
             found_object = found_object.strip(strip_char)
         if type_cast == 'int':
             found_object = int(found_object)
         elif type_cast == 'bool':
-            found_object = True if found_object.lower() == 'yes' else False if found_object.lower() == 'no' else ''
+            found_object = 'No' if found_object.lower() == 'no' or 'not present' in found_object.lower() else 'Yes' if found_object.lower() == 'yes' or 'present' in found_object.lower() else 'Unknown'
     except NoSuchElementException as nsex:
-        print(f" - {friendly_name} not available")
+        print(f" - {friendly_name} not found")
         return ''
     except Exception as ex:
         print(ex)

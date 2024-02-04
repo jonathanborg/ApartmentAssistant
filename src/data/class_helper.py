@@ -11,6 +11,17 @@ class Locations(Enum):
     Breda=1,
     Roosendaal=2
 
+class ListingStatus(Enum):
+    New=1,
+    Viewing_Scheduled=2,
+    Offer_Placed=3,
+    Rejected=4,
+    Don__t_Like=5
+    
+    def __str__(self):
+        return str(self.name).replace('__', "'").replace('_', ' ')
+
+
 
 class ListingProp(Enum):
     Title=1,
@@ -53,26 +64,30 @@ class Listing():
         service_costs: int, plot_size: int, volume: int, property_types: str, construction_type: str, 
         construction_period: int, number_of_bedrooms: int, number_of_bathrooms: int, number_of_floors: int, 
         balcony: bool, garden: bool, energy_level: str, parking: bool, listing_type: str, garage: bool, 
-        insulations: bool, storage: bool, available: str, smoking_allowed: bool, pets_allowed: bool, 
-        broker_link: str, broker: str, photo_id: str=None
+        insulations: bool, storage: bool, smoking_allowed: bool, pets_allowed: bool, 
+        broker_link: str, broker: str, source_found: Enum, photo_id: str=None,
     ):
-        self.title, self.city, self.location, self.zip_code, self.price, self.description, self.url = title, city, location, zip_code, price, description, url
-        self.number_of_rooms, self.interior, self.for_rent_price, self.sub_description, self.offered_since = number_of_rooms, interior, for_rent_price, sub_description, offered_since
+        self.title, self.city, self.location, self.zip_code, self.description, self.url = title, city, location, zip_code, description, url
+        self.number_of_rooms, self.interior, self.list_price, self.for_rent_price, self.sub_description, self.offered_since = number_of_rooms, interior, price, for_rent_price, sub_description, offered_since
         self.status, self.acceptance, self.contract_duration, self.deposit, self.interior, self.upkeep = status, acceptance, contract_duration, deposit, interior, upkeep
         self.surface_area, self.dwelling_type, self.situations = surface_area, dwelling_type, situations
         self.service_costs, self.plot_size, self.volume, self.property_types, self.construction_type = service_costs, plot_size, volume, property_types, construction_type
         self.construction_period, self.number_of_bedrooms, self.number_of_bathrooms, self.number_of_floors = construction_period, number_of_bedrooms, number_of_bathrooms, number_of_floors
         self.balcony, self.garden, self.energy_level, self.parking, self.listing_type, self.garage = balcony, garden, energy_level, parking, listing_type, garage
-        self.insulations, self.storage, self.available, self.smoking_allowed, self.pets_allowed = insulations, storage, available, smoking_allowed, pets_allowed
+        self.insulations, self.storage, self.smoking_allowed, self.pets_allowed = insulations, storage, smoking_allowed, pets_allowed
         self.broker_link, self.broker, self.photo_id = broker_link, broker, photo_id
         self.internal_id = None
+        self.price = self.list_price + self.service_costs if self.service_costs != '' else self.list_price
+        self.date_found = f"{datetime.datetime.now():%d/%m/%Y %H:%M:%S}"
+        self.source_found = source_found.name
+        self.list_status = ListingStatus.New
 
     @staticmethod
     def header():
         # Main Details
-        main_dets = f'Title, City, Location, Price, Description, Url, Property Type, Zip Code, Interior, Available From' 
+        main_dets = f'Title, City, Location, Price, Listing Status, Last Activity, Comments, Description, Url, Property Type, Zip Code, Interior, Available From, Date Found, Source Found' 
         # Contract Details
-        contract_dets = f'Contract Duration, Deposit, Service Costs, Rent Price, Sub Description, Offered_since, Surface Area, Number of Rooms, Energy Level, Status, Available, Upkeep, Dwelling Type'
+        contract_dets = f'Contract Duration, Deposit, Service Costs, List Price, Rent Price, Sub Description, Offered Since, Surface Area, Number of Rooms, Energy Level, Status, Upkeep, Dwelling Type'
         # Construction Details
         constr_dets = f'Situations, Plot Size, Volume, Construction Type, Construction Period' 
         # Building Details
@@ -83,4 +98,4 @@ class Listing():
 
 
     def __repr__(self):
-        return f"{self.title}\t{self.city}\t{self.location}\t{self.price}\t{self.description}\t{self.url}\t{self.property_types}\t{self.zip_code}\t{self.interior}\t{self.acceptance}\t{self.contract_duration}\t{self.deposit}\t{self.service_costs}\t{self.for_rent_price}\t{self.sub_description}\t{self.offered_since}\t{self.surface_area}\t{self.number_of_rooms}\t{self.energy_level}\t{self.status}\t{self.available}\t{self.upkeep}\t{self.dwelling_type}\t{self.situations}\t{self.plot_size}\t{self.volume}\t{self.construction_type}\t{self.construction_period}\t{self.number_of_bedrooms}\t{self.number_of_bathrooms}\t{self.number_of_floors}\t{self.balcony}\t{self.garden}\t{self.storage}\t{self.parking}\t{self.listing_type}\t{self.garage}\t{self.insulations}\t{self.smoking_allowed}\t{self.pets_allowed}\t{self.broker_link}\t{self.broker}\t{self.photo_id}\t{self.internal_id}"
+        return f"{self.title}\t{self.city}\t{self.location}\t{self.price}\t{self.list_status}\t\t\t{self.description}\t{self.url}\t{self.property_types}\t{self.zip_code}\t{self.interior}\t{self.acceptance}\t{self.date_found}\t{self.source_found}\t{self.contract_duration}\t{self.deposit}\t{self.service_costs}\t{self.list_price}\t{self.for_rent_price}\t{self.sub_description}\t{self.offered_since}\t{self.surface_area}\t{self.number_of_rooms}\t{self.energy_level}\t{self.status}\t{self.upkeep}\t{self.dwelling_type}\t{self.situations}\t{self.plot_size}\t{self.volume}\t{self.construction_type}\t{self.construction_period}\t{self.number_of_bedrooms}\t{self.number_of_bathrooms}\t{self.number_of_floors}\t{self.balcony}\t{self.garden}\t{self.storage}\t{self.parking}\t{self.listing_type}\t{self.garage}\t{self.insulations}\t{self.smoking_allowed}\t{self.pets_allowed}\t{self.broker_link}\t{self.broker}\t{self.photo_id}\t{self.internal_id}"

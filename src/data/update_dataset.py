@@ -25,27 +25,39 @@ def one_time_sheets_import(file_name):
 def get_previous_listings() -> pd.DataFrame:
     active_listings = google_call(call_type=CallType.Read, sheet_id=SPREADSHEET_ID, sheet_range=f"{SHEET_REVIEW_NAME}!{sheet_range_split[0]}1:{sheet_range_split[1]}")
     dated_listings = google_call(call_type=CallType.Read, sheet_id=SPREADSHEET_ID, sheet_range=f"{SHEET_DEAD_NAME}!{sheet_range_split[0]}1:{sheet_range_split[1]}")
-    return active_listings, dated_listings
+    old_listings = []
+    if len(active_listings) > 0:
+        headers = active_listings.pop(0)
+        old_listings += pd.DataFrame(active_listings, columns=headers)['Url'].tolist()
+    if len(dated_listings) > 0:
+        headers = dated_listings.pop(0)
+        old_listings += pd.DataFrame(dated_listings, columns=headers)['Url'].tolist()
+    if len(old_listings) == 0:
+        return None, active_listings, dated_listings
+    return old_listings, active_listings, dated_listings
 
 
-def get_new_listings(input_location: str, max_price: int, old_listings: list) -> pd.DataFrame:
+def get_new_listings(input_location: str, max_price: int, old_listings_urls: list, save_local_files: bool) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
     logger.info('--- Getting New Pararius Data')
     pararius_file_name = get_file_name(source=Sources.Pararius, location=input_location)
-    if (old_listings is None or len(old_listings) == 0) and file_exists(pararius_file_name):
-        old_listings = get_data_from_file(pararius_file_name)
-    pararius_data = get_pararius_data(location=input_location, max_price=max_price, old_listings=old_listings)
-    save_data_to_file(data=pararius_data, input_location=input_location, max_price=max_price, filename=pararius_file_name)
+    if (old_listings_urls is None or len(old_listings_urls) == 0) and file_exists(pararius_file_name):
+        old_listings_urls = get_data_from_file(pararius_file_name)['Url']
+        old_listings_urls = None if old_listings_urls.empty else old_listings_urls
+    pararius_data = get_pararius_data(location=input_location, max_price=max_price, old_listings_urls=old_listings_urls)
+    if save_local_files:
+        save_data_to_file(data=pararius_data, input_location=input_location, max_price=max_price, filename=pararius_file_name)
     
     logger.info('--- Getting New Funda Data')
     # funda_file_name = get_file_name(source=Sources.Funda, location=input_location)
     # TODO: Implement Funda Scrapper without library
     funda_data = None
-    # save_data_to_file(data=funda_data, input_location=input_location, max_price=max_price, filename=funda_file_name)
+    # if save_local_files:
+    #     save_data_to_file(data=funda_data, input_location=input_location, max_price=max_price, filename=funda_file_name)
     return pd.concat([pararius_data, funda_data])
 
 
-def main(input_location: str, max_price: int):
+def main(input_location: str, max_price: int, save_local_files: bool=False):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
@@ -53,19 +65,15 @@ def main(input_location: str, max_price: int):
     logger.info('Making final data set from raw data')
 
     logger.info('- Getting Past Data')
-    active_listings, dated_listings = get_previous_listings()
-    old_listings = pd.DataFrame(active_listings + dated_listings)
-    if old_listings.empty:
-        old_listings = None
-
+    old_listings, active_listings, dated_listings = get_previous_listings()
+    
     logger.info('- Getting New Listings')
-    new_listings = get_new_listings(input_location=input_location, max_price=max_price, old_listings=old_listings)
+    new_listings = get_new_listings(input_location=input_location, max_price=max_price, old_listings_urls=old_listings, save_local_files=save_local_files)
 
     logger.info('- Upload New Listings')
-    listings_input = new_listings.values.tolist()
-    if len(active_listings) == 0:
-        listings_input = [Listing.header().tolist()] + listings_input
-    api_call = google_call(call_type=CallType.Write, sheet_id=SPREADSHEET_ID, sheet_range=f"{SHEET_REVIEW_NAME}!{sheet_range_split[0]}{len(active_listings)+1}:{sheet_range_split[1]}", additional_data=listings_input)
+    listings_input = new_listings.values.tolist() if len(active_listings) > 0 else [new_listings.columns.tolist()] + new_listings.values.tolist()
+    if len(listings_input) > 0:
+        api_call = google_call(call_type=CallType.Write, sheet_id=SPREADSHEET_ID, sheet_range=f"{SHEET_REVIEW_NAME}!{sheet_range_split[0]}{len(active_listings)+1}:{sheet_range_split[1]}", additional_data=listings_input)
     
 
 
@@ -115,5 +123,5 @@ if __name__ == '__main__':
 
     # pararius_file_name = get_file_name(source=Sources.Pararius, location=Locations.Roosendaal.name)
     # one_time_sheets_import(pararius_file_name)
-    
-    main(Locations.Roosendaal.name, 1500)
+    save_local_files = True
+    main(Locations.Roosendaal.name, 1500, save_local_files)

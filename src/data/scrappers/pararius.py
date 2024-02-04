@@ -3,9 +3,10 @@ import time
 import logging
 import hyperlink
 import pandas as pd
+import multiprocessing
 # from csv import writer
 # from bs4 import BeautifulSoup
-from class_helper import Listing
+from class_helper import Sources, Listing
 from dateutil.relativedelta import relativedelta
 from selenium_helper import initiate_selenium, find_element
 from datetime import date, datetime, timedelta
@@ -30,27 +31,63 @@ def __get_total_pages(driver):
     return total_pages
 
 
-def __get_page_content(driver, previous_listings):
+def __get_page_content(driver, previous_listings_url):
     logger = logging.getLogger(__name__)
     logger.info(f'---- Getting all listings on page')
     all_listings = driver.find_elements(By.CSS_SELECTOR, '[class$="listing-search-item__link--title"')
     all_listings_url = [x.get_attribute("href") for x in all_listings]
-    listings_data = []
     try:
         all_listings_url = list(set(all_listings_url))
-        list_len = len(all_listings_url)
-        for i, listing_url in enumerate(all_listings_url):
-            # listing_url = listing.find_element(By.XPATH, '//h2/a').get_attribute("href")
-            logger.info(f'---- {i+1}/{list_len}: {listing_url}')
-            if not __listing_already_saved(listing_url=listing_url, previous_listings=previous_listings):
-                driver.get(listing_url)
-                current_listing = __get_listing_content(driver)
-                listings_data.append(str(current_listing).split('\t'))
-        # TODO: Add Functionality to close (update status) application which are no longer on the site - if not found in listing - set status (check across all pages)
+        if previous_listings_url is not None:
+            all_listings_url = list(set(all_listings_url) - set(previous_listings_url))
+        logger.info(f'---- Listings to be added: {len(all_listings_url)}')
+        # listings_data = __get_listings_content(driver=driver, all_listings_url=all_listings_url)
+        listings_data = __get_page_content_parallel(all_listings_url=all_listings_url)
         return listings_data
     except Exception as ex:
         print(ex)
         return listings_data
+
+
+def __get_listings_content(driver, all_listings_url):
+    logger = logging.getLogger(__name__)
+    list_len = len(all_listings_url)
+
+    listings_data = []
+    for i, listing_url in enumerate(all_listings_url):
+    # listing_url = listing.find_element(By.XPATH, '//h2/a').get_attribute("href")
+        logger.info(f'---- {i+1}/{list_len}: {listing_url}')
+        # if not __listing_already_saved(listing_url=listing_url, previous_listings=previous_listings):
+        driver.get(listing_url)
+        current_listing = __get_listing_content(driver)
+        listings_data.append(str(current_listing).split('\t'))
+    # TODO: Add Functionality to close (update status) application which are no longer on the site - if not found in listing - set status (check across all pages)
+    return listings_data
+
+
+def __get_page_content_parallel(all_listings_url):
+    manager = multiprocessing.Manager()
+    return_dict = manager.dict()
+    jobs = []
+    for i, url in enumerate(all_listings_url):
+        p = multiprocessing.Process(target=__scrape_listing, args=(url, i,  return_dict)) 
+        jobs.append(p)
+        p.start()
+
+    for p in jobs: 
+        p.join()
+
+    return return_dict.values()
+    # TODO: Add Functionality to close (update status) application which are no longer on the site - if not found in listing - set status (check across all pages)
+    # return listings_data
+
+
+def __scrape_listing(url, procnum, return_dict):
+    driver = initiate_selenium() 
+    driver.get(url) 
+    current_listing = __get_listing_content(driver)
+    driver.close() 
+    return_dict[procnum] = str(current_listing).split('\t')
 
 
 def __listing_already_saved(listing_url, previous_listings):
@@ -85,7 +122,7 @@ def __get_listing_content(listing):
     
     status = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--status > .listing-features__main-description", friendly_name="Status", attribute="textContent")
     acceptance = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--acceptance > .listing-features__main-description", friendly_name="Acceptance", attribute="textContent")
-    if 'from' in acceptance:
+    if 'from' in acceptance.lower():
         acceptance = datetime.strptime(acceptance.replace("From ", ""), '%d-%m-%Y').date()
     interior = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--interior > .listing-features__main-description", friendly_name="Interior", attribute="textContent")
     dwelling_type = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--dwelling_type > .listing-features__main-description", friendly_name="Dwelling Type", attribute="textContent")
@@ -95,11 +132,11 @@ def __get_listing_content(listing):
     
     service_costs, plot_size, volume, property_types, construction_type, construction_period = [None] * 6
     number_of_bedrooms, number_of_bathrooms, number_of_floors, balcony, garden, energy_level = [None] * 6
-    parking, listing_type, garage, insulations, storage, available, smoking_allowed, pets_allowed = [None] * 8
+    parking, listing_type, garage, insulations, storage, smoking_allowed, pets_allowed = [None] * 7
     upkeep, situations, sub_description, contract_duration, deposit = [None] * 5
 
     upkeep = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--upkeep > .listing-features__main-description", friendly_name="Upkeep", attribute="textContent")
-    situations = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--situations > .listing-features__main-description", friendly_name="Situations", attribute="textContent", remove_strs=[('\n',' - '), ('\t',' ')])
+    situations = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--situations > .listing-features__main-description", friendly_name="Situations", attribute="textContent", remove_strs=[('\n',' - '), '\t'])
     sub_description = find_element(listing, By.CSS_SELECTOR, ".listing-features__sub-description > li", friendly_name="Sub Description", attribute="textContent")
     contract_duration = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--contract_duration > .listing-features__main-description", friendly_name="Contract Duration", attribute="textContent")
     deposit = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--deposit > .listing-features__main-description", friendly_name="Deposit", type_cast="int", attribute="textContent", remove_strs=[',', '€'])
@@ -122,7 +159,7 @@ def __get_listing_content(listing):
     garage = find_element(listing, By.CSS_SELECTOR, ".page__details--garage .listing-features__main-description", friendly_name="Garage", type_cast="bool", attribute="textContent")
     insulations = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--insulations > .listing-features__main-description", friendly_name="Insulations", attribute="textContent")
     energy_level = find_element(listing, By.CSS_SELECTOR, '[class^="listing-features__description listing-features__description--energy-label-"]', friendly_name="Energy Level", attribute="textContent", remove_strs=['\n'])
-    available = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--available > .listing-features__main-description", friendly_name="Available", type_cast="bool", attribute="textContent")
+    # available = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--available > .listing-features__main-description", friendly_name="Available", type_cast="bool", attribute="textContent")
     smoking_allowed = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--smoking_allowed > .listing-features__main-description", friendly_name="Smoking Allowed", type_cast="bool", attribute="textContent")
     pets_allowed = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--pets_allowed > .listing-features__main-description", friendly_name="Pets Allowed", type_cast="bool", attribute="textContent")
     
@@ -139,8 +176,8 @@ def __get_listing_content(listing):
         property_types=property_types, construction_type=construction_type, construction_period=construction_period, 
         number_of_bedrooms=number_of_bedrooms, number_of_bathrooms=number_of_bathrooms, number_of_floors=number_of_floors, 
         balcony=balcony, garden=garden, energy_level=energy_level, parking=parking, listing_type=listing_type, 
-        garage=garage, insulations=insulations, storage=storage, available=available, smoking_allowed=smoking_allowed, 
-        pets_allowed=pets_allowed, broker_link=broker_link, broker=broker, photo_id=photo_id)
+        garage=garage, insulations=insulations, storage=storage, smoking_allowed=smoking_allowed, 
+        pets_allowed=pets_allowed, broker_link=broker_link, broker=broker, source_found=Sources.Pararius, photo_id=photo_id)
 
     return listing
     
@@ -152,7 +189,7 @@ def get_saved_pararius_data(old_file_name: str):
     return None
 
 
-def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_listings: pd.DataFrame=None) -> pd.DataFrame:
+def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_listings_urls: list=None) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
     driver = initiate_selenium()
     
@@ -167,7 +204,7 @@ def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_li
         if i > 1:
             url = f'{pararius_url}page-{i+1}'
             driver.get(url)
-        page_listings = __get_page_content(driver, old_listings)
+        page_listings = __get_page_content(driver, old_listings_urls)
         all_listings_tsv += page_listings
     driver.close()
     return pd.DataFrame(all_listings_tsv, columns=Listing.header().split(', '))
