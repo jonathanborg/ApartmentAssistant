@@ -40,12 +40,9 @@ def get_previous_listings() -> pd.DataFrame:
 def get_new_listings(input_location: str, max_price: int, old_listings_urls: list, save_local_files: bool) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
     logger.info('--- Getting New Pararius Data')
-    pararius_file_name = get_file_name(source=Sources.Pararius, location=input_location)
-    if (old_listings_urls is None or len(old_listings_urls) == 0) and file_exists(pararius_file_name):
-        old_listings_urls = get_data_from_file(pararius_file_name)['Url']
-        old_listings_urls = None if old_listings_urls.empty else old_listings_urls
     pararius_data = get_pararius_data(location=input_location, max_price=max_price, old_listings_urls=old_listings_urls)
     if save_local_files:
+        pararius_file_name = get_file_name(source=Sources.Pararius, location=input_location)
         save_data_to_file(data=pararius_data, input_location=input_location, max_price=max_price, filename=pararius_file_name)
     
     logger.info('--- Getting New Funda Data')
