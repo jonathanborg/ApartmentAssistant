@@ -4,25 +4,13 @@ import logging
 import hyperlink
 import pandas as pd
 import multiprocessing
-# from csv import writer
-# from bs4 import BeautifulSoup
 from class_helper import Sources, Listing
+from selenium.webdriver.common.by import By 
+from datetime import date, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from selenium_helper import initiate_selenium, find_element
-from datetime import date, datetime, timedelta
-from selenium.webdriver.common.by import By 
 
 HOME_PAGE = "https://www.pararius.com"
-
-# def __get_total_pages_old(pararius_url):
-#     # request = requests.Session()
-#     headers = {'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"}
-#     page = requests.get(pararius_url, headers=headers)
-
-#     soup = BeautifulSoup(page.content,'html.parser')
-#     all_pages = soup.find_all('a',class_='pagination__link')
-#     total_pages = max([int(x.text) for x in all_pages if x.text.isdigit()])
-#     return total_pages
 
 
 def __get_total_pages(driver):
@@ -48,22 +36,20 @@ def __get_page_content(driver, previous_listings_url):
         print(ex)
         return listings_data
 
+# def __get_listings_content(driver, all_listings_url):
+#     logger = logging.getLogger(__name__)
+#     list_len = len(all_listings_url)
 
-def __get_listings_content(driver, all_listings_url):
-    logger = logging.getLogger(__name__)
-    list_len = len(all_listings_url)
-
-    listings_data = []
-    for i, listing_url in enumerate(all_listings_url):
-    # listing_url = listing.find_element(By.XPATH, '//h2/a').get_attribute("href")
-        logger.info(f'---- {i+1}/{list_len}: {listing_url}')
-        # if not __listing_already_saved(listing_url=listing_url, previous_listings=previous_listings):
-        driver.get(listing_url)
-        current_listing = __get_listing_content(driver)
-        listings_data.append(str(current_listing).split('\t'))
-    # TODO: Add Functionality to close (update status) application which are no longer on the site - if not found in listing - set status (check across all pages)
-    return listings_data
-
+#     listings_data = []
+#     for i, listing_url in enumerate(all_listings_url):
+#     # listing_url = listing.find_element(By.XPATH, '//h2/a').get_attribute("href")
+#         logger.info(f'---- {i+1}/{list_len}: {listing_url}')
+#         # if not __listing_already_saved(listing_url=listing_url, previous_listings=previous_listings):
+#         driver.get(listing_url)
+#         current_listing = __get_listing_content(driver)
+#         listings_data.append(str(current_listing).split('\t'))
+#     # TODO: Add Functionality to close (update status) application which are no longer on the site - if not found in listing - set status (check across all pages)
+#     return listings_data
 
 def __get_page_content_parallel(all_listings_url):
     manager = multiprocessing.Manager()
@@ -78,8 +64,6 @@ def __get_page_content_parallel(all_listings_url):
         p.join()
 
     return return_dict.values()
-    # TODO: Add Functionality to close (update status) application which are no longer on the site - if not found in listing - set status (check across all pages)
-    # return listings_data
 
 
 def __scrape_listing(url, procnum, return_dict):
@@ -88,10 +72,6 @@ def __scrape_listing(url, procnum, return_dict):
     current_listing = __get_listing_content(driver)
     driver.close() 
     return_dict[procnum] = str(current_listing).split('\t')
-
-
-def __listing_already_saved(listing_url, previous_listings):
-    return previous_listings is not None and len(previous_listings[previous_listings['Url'] == listing_url]) > 0
 
 
 def __get_listing_content(listing):
@@ -182,13 +162,6 @@ def __get_listing_content(listing):
     return listing
     
 
-def get_saved_pararius_data(old_file_name: str):
-    # TODO - Functionality to get all items in processed data (Sheets API)
-    if old_file_name is not None:
-        return pd.read_csv(old_file_name, sep='\t', header=0)
-    return None
-
-
 def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_listings_urls: list=None) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
     driver = initiate_selenium()
@@ -208,4 +181,3 @@ def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_li
         all_listings_tsv += page_listings
     driver.close()
     return pd.DataFrame(all_listings_tsv, columns=Listing.header().split(', '))
-
