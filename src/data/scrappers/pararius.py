@@ -10,7 +10,29 @@ from datetime import date, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from selenium_helper import initiate_selenium, find_element
 
+
 HOME_PAGE = "https://www.pararius.com"
+
+
+def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_listings_urls: list=None) -> pd.DataFrame:
+    logger = logging.getLogger(__name__)
+    driver = initiate_selenium()
+    
+    pararius_url = f"{HOME_PAGE}/apartments/{location.lower()}/0-{max_price}"
+    driver.get(pararius_url)
+    total_pages = __get_total_pages(driver)
+    if max_pages is not None and max_pages < total_pages:
+        total_pages = max_pages
+    all_listings_tsv = []
+    for i in range(1, total_pages+1):
+        logger.info(f'---- Pararius Page {i}')
+        if i > 1:
+            url = f'{pararius_url}page-{i+1}'
+            driver.get(url)
+        page_listings = __get_page_content(driver, old_listings_urls)
+        all_listings_tsv += page_listings
+    driver.close()
+    return pd.DataFrame(all_listings_tsv, columns=Listing.header().split(', '))
 
 
 def __get_total_pages(driver):
@@ -29,27 +51,12 @@ def __get_page_content(driver, previous_listings_url):
         if previous_listings_url is not None:
             all_listings_url = list(set(all_listings_url) - set(previous_listings_url))
         logger.info(f'---- Listings to be added: {len(all_listings_url)}')
-        # listings_data = __get_listings_content(driver=driver, all_listings_url=all_listings_url)
         listings_data = __get_page_content_parallel(all_listings_url=all_listings_url)
         return listings_data
     except Exception as ex:
         print(ex)
         return listings_data
 
-# def __get_listings_content(driver, all_listings_url):
-#     logger = logging.getLogger(__name__)
-#     list_len = len(all_listings_url)
-
-#     listings_data = []
-#     for i, listing_url in enumerate(all_listings_url):
-#     # listing_url = listing.find_element(By.XPATH, '//h2/a').get_attribute("href")
-#         logger.info(f'---- {i+1}/{list_len}: {listing_url}')
-#         # if not __listing_already_saved(listing_url=listing_url, previous_listings=previous_listings):
-#         driver.get(listing_url)
-#         current_listing = __get_listing_content(driver)
-#         listings_data.append(str(current_listing).split('\t'))
-#     # TODO: Add Functionality to close (update status) application which are no longer on the site - if not found in listing - set status (check across all pages)
-#     return listings_data
 
 def __get_page_content_parallel(all_listings_url):
     manager = multiprocessing.Manager()
@@ -160,24 +167,4 @@ def __get_listing_content(listing):
         pets_allowed=pets_allowed, broker_link=broker_link, broker=broker, source_found=Sources.Pararius, photo_id=photo_id)
 
     return listing
-    
 
-def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_listings_urls: list=None) -> pd.DataFrame:
-    logger = logging.getLogger(__name__)
-    driver = initiate_selenium()
-    
-    pararius_url = f"{HOME_PAGE}/apartments/{location.lower()}/0-{max_price}"
-    driver.get(pararius_url)
-    total_pages = __get_total_pages(driver)
-    if max_pages is not None and max_pages < total_pages:
-        total_pages = max_pages
-    all_listings_tsv = []
-    for i in range(1, total_pages+1):
-        logger.info(f'---- Pararius Page {i}')
-        if i > 1:
-            url = f'{pararius_url}page-{i+1}'
-            driver.get(url)
-        page_listings = __get_page_content(driver, old_listings_urls)
-        all_listings_tsv += page_listings
-    driver.close()
-    return pd.DataFrame(all_listings_tsv, columns=Listing.header().split(', '))
