@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 
 
-def initiate_selenium():
+def initiate_selenium(url: str=None):
     # Define the Chrome webdriver options
     options = webdriver.ChromeOptions() 
     options.add_argument("--headless") # Set the Chrome webdriver to run in headless mode for scalability
@@ -20,6 +20,8 @@ def initiate_selenium():
     driver = Chrome(options=options) 
     # Set an implicit wait of 5 seconds to allow time for elements to appear before throwing an exception
     driver.implicitly_wait(5)
+    if url is not None:
+        driver.get(url)
     return driver
 
 

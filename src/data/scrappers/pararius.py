@@ -1,9 +1,5 @@
 import re
-import time
-import logging
-import hyperlink
-import pandas as pd
-import multiprocessing
+# import time
 from class_helper import Sources, Listing
 from selenium.webdriver.common.by import By 
 from datetime import date, datetime, timedelta
@@ -11,71 +7,8 @@ from dateutil.relativedelta import relativedelta
 from selenium_helper import initiate_selenium, find_element
 
 
-HOME_PAGE = "https://www.pararius.com"
-
-
-def get_pararius_data(location: str, max_price: int, max_pages: int=None, old_listings_urls: list=None) -> pd.DataFrame:
-    logger = logging.getLogger(__name__)
-    driver = initiate_selenium()
-    
-    pararius_url = f"{HOME_PAGE}/apartments/{location.lower()}/0-{max_price}"
-    driver.get(pararius_url)
-    total_pages = __get_total_pages(driver)
-    if max_pages is not None and max_pages < total_pages:
-        total_pages = max_pages
-    all_listings_tsv = []
-    for i in range(1, total_pages+1):
-        logger.info(f'---- Pararius Page {i}')
-        if i > 1:
-            url = f'{pararius_url}page-{i+1}'
-            driver.get(url)
-        page_listings = __get_page_content(driver, old_listings_urls)
-        all_listings_tsv += page_listings
-    driver.close()
-    return pd.DataFrame(all_listings_tsv, columns=Listing.header().split(', '))
-
-
-def __get_total_pages(driver):
-    all_pages = driver.find_elements(By.CLASS_NAME, "pagination__link")
-    total_pages = max([int(x.get_attribute("textContent")) for x in all_pages if x.text.isdigit()]) if len(all_pages) > 0 else 1
-    return total_pages
-
-
-def __get_page_content(driver, previous_listings_url):
-    logger = logging.getLogger(__name__)
-    logger.info(f'---- Getting all listings on page')
-    all_listings = driver.find_elements(By.CSS_SELECTOR, '[class$="listing-search-item__link--title"')
-    all_listings_url = [x.get_attribute("href") for x in all_listings]
-    try:
-        all_listings_url = list(set(all_listings_url))
-        if previous_listings_url is not None:
-            all_listings_url = list(set(all_listings_url) - set(previous_listings_url))
-        logger.info(f'---- Listings to be added: {len(all_listings_url)}')
-        listings_data = __get_page_content_parallel(all_listings_url=all_listings_url)
-        return listings_data
-    except Exception as ex:
-        print(ex)
-        return listings_data
-
-
-def __get_page_content_parallel(all_listings_url):
-    manager = multiprocessing.Manager()
-    return_dict = manager.dict()
-    jobs = []
-    for i, url in enumerate(all_listings_url):
-        p = multiprocessing.Process(target=__scrape_listing, args=(url, i,  return_dict)) 
-        jobs.append(p)
-        p.start()
-
-    for p in jobs: 
-        p.join()
-
-    return return_dict.values()
-
-
-def __scrape_listing(url, procnum, return_dict):
-    driver = initiate_selenium() 
-    driver.get(url) 
+def scrape_listing_pararius(url, procnum, return_dict):
+    driver = initiate_selenium(url)
     current_listing = __get_listing_content(driver)
     driver.close() 
     return_dict[procnum] = str(current_listing).split('\t')
