@@ -61,7 +61,7 @@ def __get_listing_content(listing):
     contract_duration = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--contract_duration > .listing-features__main-description", friendly_name="Contract Duration", attribute="textContent")
     deposit = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--deposit > .listing-features__main-description", friendly_name="Deposit", type_cast="int", attribute="textContent", remove_strs=[',', '€'])
 
-    service_costs = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--service_costs > .listing-features__main-description", friendly_name="Service Cost", attribute="textContent")
+    service_costs = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--service_costs > .listing-features__main-description", friendly_name="Service Cost", type_cast="int", attribute="textContent", remove_strs=['€'])
     plot_size = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--plot_size > .listing-features__main-description", friendly_name="Plot Size", attribute="textContent")
     volume = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--volume > .listing-features__main-description", friendly_name="Volume", attribute="textContent")
     property_types = find_element(listing, By.CSS_SELECTOR, ".listing-features__description--property_types > .listing-features__main-description", friendly_name="Property Types", attribute="textContent")

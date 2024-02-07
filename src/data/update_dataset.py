@@ -45,12 +45,13 @@ def get_new_listings(input_location: str, max_price: int, old_listings_urls: lis
     logger.info('--- Getting New Pararius Data')
     # pararius_data = get_pararius_data(location=input_location, max_price=max_price, old_listings_urls=old_listings_urls)
     pararius_data = get_website_data(source=Sources.Pararius, location=input_location, max_price=max_price, old_listings_urls=old_listings_urls)
+    # pararius_data = None
     if save_local_files:
         pararius_file_name = get_file_name(source=Sources.Pararius, location=input_location)
         save_data_to_file(data=pararius_data, input_location=input_location, max_price=max_price, filename=pararius_file_name)
     
     logger.info('--- Getting New Funda Data')
-    funda_data = get_website_data(source=Sources.Funda, location=input_location, max_price=max_price, old_listings_urls=old_listings_urls)
+    funda_data = get_website_data(source=Sources.Funda, location=input_location, max_price=max_price, old_listings_urls=old_listings_urls, use_selenium=False)
     if save_local_files:
         funda_file_name = get_file_name(source=Sources.Funda, location=input_location)
         save_data_to_file(data=funda_data, input_location=input_location, max_price=max_price, filename=funda_file_name)
@@ -123,5 +124,5 @@ if __name__ == '__main__':
 
     # pararius_file_name = get_file_name(source=Sources.Pararius, location=Locations.Roosendaal.name)
     # one_time_sheets_import(pararius_file_name)
-    save_local_files = True
+    save_local_files = False
     main(Locations.Roosendaal.name, 1500, save_local_files)
