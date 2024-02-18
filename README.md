@@ -5,6 +5,13 @@ Repository to help find information about possible apartments, locations and the
 
 Integration: - Google Sheets API from the github repository (https://github.com/jonathanborg/GoogleSheetsApi)
 
+# Pending Tasks
+------------
+- [ ] Implement Rentola
+- [ ] Update
+- [ ] Find Distance from Office to apartment (Selenium: https://www.distance.to/1602-DB,Enkhuizen,NLD/3362-BB,Sliedrecht,NLD; Get Driving Route Field)
+
+
 Project Organization
 ------------
 

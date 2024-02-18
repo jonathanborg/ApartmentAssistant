@@ -7,8 +7,8 @@ from dateutil.relativedelta import relativedelta
 from selenium_helper import initiate_selenium, find_element
 
 
-def scrape_listing_pararius(url, procnum, return_dict):
-    driver = initiate_selenium(url)
+def scrape_listing_pararius(url, see_window, procnum, return_dict):
+    driver = initiate_selenium(url, see_window)
     current_listing = __get_listing_content(driver)
     driver.close() 
     return_dict[procnum] = str(current_listing).split('\t')

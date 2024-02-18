@@ -1,14 +1,16 @@
 import re
+import time
 from selenium import webdriver 
 from selenium.webdriver import Chrome 
 from selenium.webdriver.common.by import By 
 from selenium.common.exceptions import NoSuchElementException
 
 
-def initiate_selenium(url: str=None):
+def initiate_selenium(url: str=None, see_window: bool=False):
     # Define the Chrome webdriver options
     options = webdriver.ChromeOptions() 
-    options.add_argument("--headless") # Set the Chrome webdriver to run in headless mode for scalability
+    if not see_window:
+        options.add_argument("--headless") # Set the Chrome webdriver to run in headless mode for scalability
     options.add_argument("--use-fake-ui-for-media-stream")
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
@@ -22,6 +24,8 @@ def initiate_selenium(url: str=None):
     driver.implicitly_wait(5)
     if url is not None:
         driver.get(url)
+    if see_window:
+        time.sleep(15)
     return driver
 
 

@@ -9,7 +9,17 @@ class Sources(Enum):
 
 class Locations(Enum):
     Breda=1,
-    Roosendaal=2
+    Roosendaal=2,
+    Barendrecht=3,
+    Dordrecht=4,
+
+
+has_gemeente = {
+    Locations.Breda.name: True,
+    Locations.Roosendaal.name: True,
+    Locations.Barendrecht.name: False,
+    Locations.Dordrecht.name: False
+}
 
 class ListingStatus(Enum):
     New=1,
@@ -85,7 +95,7 @@ class Listing():
     @staticmethod
     def header():
         # Main Details
-        main_dets = f'Title, City, Location, Price, Listing Status, Last Activity, Comments, Description, Url, Property Type, Zip Code, Interior, Available From, Date Found, Source Found' 
+        main_dets = f'Title, City, Location, Price, Listing Status, Last Activity, System Comments, Stef - Distance, Jon - Distance, Cumulative - Distance, Near to, Stef Comments, Jon Comments, Description, Url, Property Type, Zip Code, Interior, Available From, Date Found, Source Found' 
         # Contract Details
         contract_dets = f'Contract Duration, Deposit, Service Costs, List Price, Rent Price, Sub Description, Offered Since, Surface Area, Number of Rooms, Energy Level, Status, Upkeep, Dwelling Type'
         # Construction Details
@@ -98,4 +108,4 @@ class Listing():
 
 
     def __repr__(self):
-        return f"{self.title}\t{self.city}\t{self.location}\t{self.price}\t{self.list_status}\t\t\t{self.description}\t{self.url}\t{self.property_types}\t{self.zip_code}\t{self.interior}\t{self.acceptance}\t{self.date_found}\t{self.source_found}\t{self.contract_duration}\t{self.deposit}\t{self.service_costs}\t{self.list_price}\t{self.for_rent_price}\t{self.sub_description}\t{self.offered_since}\t{self.surface_area}\t{self.number_of_rooms}\t{self.energy_level}\t{self.status}\t{self.upkeep}\t{self.dwelling_type}\t{self.situations}\t{self.plot_size}\t{self.volume}\t{self.construction_type}\t{self.construction_period}\t{self.number_of_bedrooms}\t{self.number_of_bathrooms}\t{self.number_of_floors}\t{self.balcony}\t{self.garden}\t{self.storage}\t{self.parking}\t{self.listing_type}\t{self.garage}\t{self.insulations}\t{self.smoking_allowed}\t{self.pets_allowed}\t{self.broker_link}\t{self.broker}\t{self.photo_id}\t{self.internal_id}"
+        return f"{self.title}\t{self.city}\t{self.location}\t{self.price}\t{self.list_status}\t\t\t\t\t\t\t\t\t{self.description}\t{self.url}\t{self.property_types}\t{self.zip_code}\t{self.interior}\t{self.acceptance}\t{self.date_found}\t{self.source_found}\t{self.contract_duration}\t{self.deposit}\t{self.service_costs}\t{self.list_price}\t{self.for_rent_price}\t{self.sub_description}\t{self.offered_since}\t{self.surface_area}\t{self.number_of_rooms}\t{self.energy_level}\t{self.status}\t{self.upkeep}\t{self.dwelling_type}\t{self.situations}\t{self.plot_size}\t{self.volume}\t{self.construction_type}\t{self.construction_period}\t{self.number_of_bedrooms}\t{self.number_of_bathrooms}\t{self.number_of_floors}\t{self.balcony}\t{self.garden}\t{self.storage}\t{self.parking}\t{self.listing_type}\t{self.garage}\t{self.insulations}\t{self.smoking_allowed}\t{self.pets_allowed}\t{self.broker_link}\t{self.broker}\t{self.photo_id}\t{self.internal_id}"

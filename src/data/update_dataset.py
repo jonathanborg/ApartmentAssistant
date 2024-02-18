@@ -40,25 +40,24 @@ def get_previous_listings() -> pd.DataFrame:
     return old_listings, active_listings, dated_listings
 
 
-def get_new_listings(input_location: str, max_price: int, old_listings_urls: list, save_local_files: bool) -> pd.DataFrame:
+def get_new_listings(input_location: str, max_price: int, max_radius: int, old_listings_urls: list, save_local_files: bool, see_window: bool) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
     logger.info('--- Getting New Pararius Data')
-    # pararius_data = get_pararius_data(location=input_location, max_price=max_price, old_listings_urls=old_listings_urls)
-    pararius_data = get_website_data(source=Sources.Pararius, location=input_location, max_price=max_price, old_listings_urls=old_listings_urls)
+    pararius_data = get_website_data(source=Sources.Pararius, location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, see_window=see_window)
     # pararius_data = None
     if save_local_files:
         pararius_file_name = get_file_name(source=Sources.Pararius, location=input_location)
         save_data_to_file(data=pararius_data, input_location=input_location, max_price=max_price, filename=pararius_file_name)
     
     logger.info('--- Getting New Funda Data')
-    funda_data = get_website_data(source=Sources.Funda, location=input_location, max_price=max_price, old_listings_urls=old_listings_urls, use_selenium=False)
+    funda_data = get_website_data(source=Sources.Funda, location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, use_selenium=False, see_window=False)
     if save_local_files:
         funda_file_name = get_file_name(source=Sources.Funda, location=input_location)
         save_data_to_file(data=funda_data, input_location=input_location, max_price=max_price, filename=funda_file_name)
     return pd.concat([pararius_data, funda_data])
 
 
-def main(input_location: str, max_price: int, save_local_files: bool=False):
+def main(input_location: str, max_price: int, max_radius: int, save_local_files: bool=False, see_window: bool=False):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
@@ -69,7 +68,7 @@ def main(input_location: str, max_price: int, save_local_files: bool=False):
     old_listings, active_listings, dated_listings = get_previous_listings()
     
     logger.info('- Getting New Listings')
-    new_listings = get_new_listings(input_location=input_location, max_price=max_price, old_listings_urls=old_listings, save_local_files=save_local_files)
+    new_listings = get_new_listings(input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings, save_local_files=save_local_files, see_window=see_window)
 
     logger.info('- Upload New Listings')
     listings_input = new_listings.values.tolist() if len(active_listings) > 0 else [new_listings.columns.tolist()] + new_listings.values.tolist()
@@ -125,4 +124,7 @@ if __name__ == '__main__':
     # pararius_file_name = get_file_name(source=Sources.Pararius, location=Locations.Roosendaal.name)
     # one_time_sheets_import(pararius_file_name)
     save_local_files = False
-    main(Locations.Roosendaal.name, 1500, save_local_files)
+    see_selenium = True
+    main(Locations.Barendrecht.name, 1500, 5, save_local_files, see_selenium)
+    main(Locations.Dordrecht.name, 1500, 2, save_local_files, see_selenium)
+    main(Locations.Roosendaal.name, 1500, 5, save_local_files, see_selenium)
