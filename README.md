@@ -8,7 +8,7 @@ Integration: - Google Sheets API from the github repository (https://github.com/
 # Pending Tasks
 ------------
 - [ ] Implement Rentola
-- [ ] Update
+- [ ] Update Funda - Translate text to en, and centralise all properties using the dictionary
 - [ ] Find Distance from Office to apartment (Selenium: https://www.distance.to/1602-DB,Enkhuizen,NLD/3362-BB,Sliedrecht,NLD; Get Driving Route Field)
 
 
