@@ -4,7 +4,8 @@ from enum import Enum
 
 class Sources(Enum):
     Funda=1,
-    Pararius=2
+    Pararius=2,
+    Rentola=3
 
 
 class Locations(Enum):

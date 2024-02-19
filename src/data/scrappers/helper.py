@@ -11,12 +11,14 @@ from selenium.webdriver.common.by import By
 
 HOME_PAGE_PARARIUS = "https://www.pararius.com"
 HOME_PAGE_FUNDA = "https://www.funda.nl/en"
+HOME_PAGE_RENTOLA = "https://rentola.nl/en/"
 
 
-def get_website_data(source: Sources, location: str, max_price: int, max_pages: int=None, max_radius: int=None, old_listings_urls: list=None, use_selenium: bool=True, see_window: bool=False) -> pd.DataFrame:
+def get_website_data(source: Sources, location: str, max_price: int, max_pages: int=None, max_radius: int=None, old_listings_urls: list=None, new_listings_urls: list=None, use_selenium: bool=True, see_window: bool=False) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
     try:
         listing_urls, target_func = __get_website_listings(source=source, location=location, max_price=max_price, max_pages=max_pages, max_radius=max_radius, use_selenium=use_selenium, see_window=see_window)
+        listing_urls += [x for x in new_listings_urls if source.name.lower() in x]
     except Exception as ex:
         if str(ex) == "Bot Detected":
             logger.warning(f'---- Error: Bot has been detected; no pages scrapped - run in normal mode')

@@ -28,33 +28,36 @@ def one_time_sheets_import(file_name):
 def get_previous_listings() -> pd.DataFrame:
     active_listings = google_call(call_type=CallType.Read, sheet_id=SPREADSHEET_ID, sheet_range=f"{SHEET_REVIEW_NAME}!{sheet_range_split[0]}1:{sheet_range_split[1]}")
     dated_listings = google_call(call_type=CallType.Read, sheet_id=SPREADSHEET_ID, sheet_range=f"{SHEET_DEAD_NAME}!{sheet_range_split[0]}1:{sheet_range_split[1]}")
-    old_listings = []
+    old_listings, new_listings = [], []
     if len(active_listings) > 0:
         headers = active_listings.pop(0)
-        old_listings += pd.DataFrame(active_listings, columns=headers)['Url'].tolist()
+        act_rows = pd.DataFrame(active_listings, columns=headers)
+        old_listings += act_rows[~act_rows['Date Found'].isna()]['Url'].tolist()
+        new_listings = act_rows[act_rows['Date Found'].isna()]['Url'].tolist()
     if len(dated_listings) > 0:
         headers = dated_listings.pop(0)
         old_listings += pd.DataFrame(dated_listings, columns=headers)['Url'].tolist()
     if len(old_listings) == 0:
-        return None, active_listings, dated_listings
-    return old_listings, active_listings, dated_listings
+        return None, None, active_listings, dated_listings
+    return old_listings, new_listings, active_listings, dated_listings
 
 
-def get_new_listings(input_location: str, max_price: int, max_radius: int, old_listings_urls: list, save_local_files: bool, see_window: bool) -> pd.DataFrame:
+def get_new_listings_per_source(source: Sources, input_location: str, max_price: int, max_radius: int, old_listings_urls: list, new_listings_urls: list, save_local_files: bool, use_selenium: bool, see_window: bool) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
-    logger.info('--- Getting New Pararius Data')
-    pararius_data = get_website_data(source=Sources.Pararius, location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, see_window=see_window)
-    # pararius_data = None
+    logger.info(f'--- Getting New {source.name} Data')
+    source_data = get_website_data(source=source, location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, new_listings_urls=new_listings_urls, use_selenium=use_selenium, see_window=see_window)
     if save_local_files:
-        pararius_file_name = get_file_name(source=Sources.Pararius, location=input_location)
-        save_data_to_file(data=pararius_data, input_location=input_location, max_price=max_price, filename=pararius_file_name)
-    
-    logger.info('--- Getting New Funda Data')
-    funda_data = get_website_data(source=Sources.Funda, location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, use_selenium=False, see_window=False)
-    if save_local_files:
-        funda_file_name = get_file_name(source=Sources.Funda, location=input_location)
-        save_data_to_file(data=funda_data, input_location=input_location, max_price=max_price, filename=funda_file_name)
-    return pd.concat([pararius_data, funda_data])
+        source_file_name = get_file_name(source=source, location=input_location)
+        save_data_to_file(data=source_data, input_location=input_location, max_price=max_price, filename=pararius_file_name)
+
+
+def get_new_listings(input_location: str, max_price: int, max_radius: int, old_listings_urls: list, new_listings_urls: list, save_local_files: bool, see_window: bool) -> pd.DataFrame:
+    logger = logging.getLogger(__name__)
+    # pararius_data = get_new_listings_per_source(source=Sources.Pararius, input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, new_listings_urls=new_listings_urls, save_local_files=save_local_files, use_selenium=True, see_window=see_window)
+    # funda_data = get_new_listings_per_source(source=Sources.Funda, input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, new_listings_urls=new_listings_urls, save_local_files=save_local_files, use_selenium=False, see_window=False)
+    pararius_data, funda_data = None, None
+    rentola_data = get_new_listings_per_source(source=Sources.Rentola, input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, new_listings_urls=new_listings_urls, save_local_files=save_local_files, use_selenium=False, see_window=False)
+    return pd.concat([pararius_data, funda_data, rentola_data])
 
 
 def main(input_location: str, max_price: int, max_radius: int, save_local_files: bool=False, see_window: bool=False):
@@ -65,10 +68,10 @@ def main(input_location: str, max_price: int, max_radius: int, save_local_files:
     logger.info('Making final data set from raw data')
 
     logger.info('- Getting Past Data')
-    old_listings, active_listings, dated_listings = get_previous_listings()
+    old_listings, new_listings, active_listings, dated_listings = get_previous_listings()
     
     logger.info('- Getting New Listings')
-    new_listings = get_new_listings(input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings, save_local_files=save_local_files, see_window=see_window)
+    new_listings = get_new_listings(input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings, new_listings_urls=new_listings, save_local_files=save_local_files, see_window=see_window)
 
     logger.info('- Upload New Listings')
     listings_input = new_listings.values.tolist() if len(active_listings) > 0 else [new_listings.columns.tolist()] + new_listings.values.tolist()
