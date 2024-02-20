@@ -9,7 +9,7 @@ Integration: - Google Sheets API from the github repository (https://github.com/
 ------------
 - [x] Implement Scrape from Sheet - find rows having only urls and no title; extract data -> remove row in sheet -> Insert Updated
 - [ ] Updated Scrape from Sheet - remove row in sheet after data found
-- [ ] Implement Rentola
+- [x] Implement Rentola
 - [ ] Update Funda - Translate text to en, and centralise all properties using the dictionary
 - [ ] Find Distance from Office to apartment (Selenium: https://www.distance.to/1602-DB,Enkhuizen,NLD/3362-BB,Sliedrecht,NLD; Get Driving Route Field)
 

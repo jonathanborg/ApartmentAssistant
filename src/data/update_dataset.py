@@ -49,13 +49,14 @@ def get_new_listings_per_source(source: Sources, input_location: str, max_price:
     if save_local_files:
         source_file_name = get_file_name(source=source, location=input_location)
         save_data_to_file(data=source_data, input_location=input_location, max_price=max_price, filename=pararius_file_name)
+    return source_data
 
 
 def get_new_listings(input_location: str, max_price: int, max_radius: int, old_listings_urls: list, new_listings_urls: list, save_local_files: bool, see_window: bool) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
-    # pararius_data = get_new_listings_per_source(source=Sources.Pararius, input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, new_listings_urls=new_listings_urls, save_local_files=save_local_files, use_selenium=True, see_window=see_window)
-    # funda_data = get_new_listings_per_source(source=Sources.Funda, input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, new_listings_urls=new_listings_urls, save_local_files=save_local_files, use_selenium=False, see_window=False)
-    pararius_data, funda_data = None, None
+    pararius_data = get_new_listings_per_source(source=Sources.Pararius, input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, new_listings_urls=new_listings_urls, save_local_files=save_local_files, use_selenium=True, see_window=see_window)
+    funda_data = get_new_listings_per_source(source=Sources.Funda, input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, new_listings_urls=new_listings_urls, save_local_files=save_local_files, use_selenium=False, see_window=False)
+    # pararius_data, funda_data = None, None
     rentola_data = get_new_listings_per_source(source=Sources.Rentola, input_location=input_location, max_price=max_price, max_radius=max_radius, old_listings_urls=old_listings_urls, new_listings_urls=new_listings_urls, save_local_files=save_local_files, use_selenium=False, see_window=False)
     return pd.concat([pararius_data, funda_data, rentola_data])
 
@@ -128,6 +129,6 @@ if __name__ == '__main__':
     # one_time_sheets_import(pararius_file_name)
     save_local_files = False
     see_selenium = True
-    main(Locations.Barendrecht.name, 1500, 5, save_local_files, see_selenium)
     main(Locations.Dordrecht.name, 1500, 2, save_local_files, see_selenium)
     main(Locations.Roosendaal.name, 1500, 5, save_local_files, see_selenium)
+    main(Locations.Barendrecht.name, 1500, 5, save_local_files, see_selenium)
