@@ -15,11 +15,15 @@ HOME_PAGE_FUNDA = "https://www.funda.nl/en"
 HOME_PAGE_RENTOLA = "https://rentola.nl/en/"
 
 
-def get_website_data(source: Sources, location: str, max_price: int, max_pages: int=None, max_radius: int=None, old_listings_urls: list=None, new_listings_urls: list=None, use_selenium: bool=True, see_window: bool=False) -> pd.DataFrame:
+def get_website_data(source: Sources, locations: dict, max_price: int, max_pages: int=None, max_radius: int=None, old_listings_urls: list=None, new_listings_urls: list=None, use_selenium: bool=True, see_window: bool=False, get_new_data: bool=True) -> pd.DataFrame:
     logger = logging.getLogger(__name__)
     try:
-        listing_urls, target_func = __get_website_listings(source=source, location=location, max_price=max_price, max_pages=max_pages, max_radius=max_radius, use_selenium=use_selenium, see_window=see_window)
-        listing_urls += [x for x in new_listings_urls if source.name.lower() in x]
+        target_func = None
+        listing_urls = [x for x in new_listings_urls if source.name.lower() in x]
+        for location in list(locations.keys()):
+            loc_listing_urls, target_func = __get_website_listings(source=source, location=location, max_price=max_price, max_pages=max_pages, max_radius=locations[location], use_selenium=use_selenium, see_window=see_window, get_new_data=get_new_data)
+            listing_urls += loc_listing_urls
+            
     except Exception as ex:
         if str(ex) == "Bot Detected":
             logger.warning(f'---- Error: Bot has been detected; no pages scrapped - run in normal mode')
@@ -36,7 +40,7 @@ def get_website_data(source: Sources, location: str, max_price: int, max_pages: 
     return pd.DataFrame(listing_data, columns=Listing.header().split(', '))
 
 
-def __get_website_listings(source: Sources, location: str, max_price: int, max_pages: int, max_radius: int, use_selenium:bool, see_window:bool):
+def __get_website_listings(source: Sources, location: str, max_price: int, max_pages: int, max_radius: int, use_selenium:bool, see_window:bool, get_new_data: bool):
     logger = logging.getLogger(__name__)
     
     #To Remove - Start
@@ -45,23 +49,24 @@ def __get_website_listings(source: Sources, location: str, max_price: int, max_p
     # return_dict = {}
     # scrape_listing_rentola(url, see_window, procnum, return_dict)
     #To Remove - End
-
-    website_url, page_ext, total_pages, listings_selector, pagination_link_selector, target_func = __get_main_website_details(source=source, location=location, max_price=max_price, max_pages=max_pages, max_radius=max_radius, use_selenium=use_selenium, see_window=see_window)
-    
-    i, all_listings = 1, []
-    logger.info(f'---- Total Pages: {total_pages}; Main Page: {website_url};')
-    total_pages = 1 if total_pages is None else total_pages
-    while i < total_pages+1:
-        logger.info(f'---- {source.name} Page {i}')
-        url = f'{website_url}{page_ext}{i}' if i > 1 else website_url
-        logger.info(f'---- Getting all listings on page')
-        current_listings, page = __get_page_listings(source=source, url=url, listings_selector=listings_selector, use_selenium=use_selenium, see_window=see_window)
-        all_listings += current_listings
-        if source.Rentola:
-            more_pages = __get_total_pages(page=page, source=source, use_selenium=use_selenium, website_url=url, see_window=see_window, pagination_link_selector=pagination_link_selector)
-            if more_pages is None:
-                total_pages += 1
-        i += 1
+    all_listings = []
+    website_url, page_ext, listings_selector, pagination_link_selector, target_func = __get_main_website_details(source=source, location=location, max_price=max_price, max_pages=max_pages, max_radius=max_radius, use_selenium=use_selenium, see_window=see_window)
+    if get_new_data:
+        i = 1
+        total_pages = __get_total_pages(None, source, use_selenium, website_url, see_window, pagination_link_selector)
+        logger.info(f'---- Total Pages: {total_pages}; Main Page: {website_url};')
+        total_pages = 1 if total_pages is None else total_pages
+        while i < total_pages+1:
+            logger.info(f'---- {source.name} Page {i}')
+            url = f'{website_url}{page_ext}{i}' if i > 1 else website_url
+            logger.info(f'---- Getting all listings on page')
+            current_listings, page = __get_page_listings(source=source, url=url, listings_selector=listings_selector, use_selenium=use_selenium, see_window=see_window)
+            all_listings += current_listings
+            if source.Rentola:
+                more_pages = __get_total_pages(page=page, source=source, use_selenium=use_selenium, website_url=url, see_window=see_window, pagination_link_selector=pagination_link_selector)
+                if more_pages is None:
+                    total_pages += 1
+            i += 1
     # for i in range(1, total_pages+1):
     #     logger.info(f'---- {source.name} Page {i}')
     #     url = f'{website_url}{page_ext}{i}' if i > 1 else website_url
@@ -92,8 +97,7 @@ def __get_main_website_details(source: Sources, location: str, max_price: int, m
     else:
         raise NotImplementedError()
 
-    total_pages = __get_total_pages(None, source, use_selenium, website_url, see_window, pagination_link_selector)
-    return website_url, page_ext, total_pages, listings_selector, pagination_link_selector, target_func
+    return website_url, page_ext, listings_selector, pagination_link_selector, target_func
 
 
 def __get_total_pages(page, source: Sources, use_selenium: bool, website_url: str, see_window: bool, pagination_link_selector: str ):
