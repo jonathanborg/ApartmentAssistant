@@ -44,7 +44,10 @@ def find_element(selenium_item, selection_type, selector_name: str, friendly_nam
         if strip_char is not None:
             found_object = found_object.strip(strip_char)
         if type_cast == 'int':
-            found_object = int(found_object)
+            if friendly_name.lower() in ['price', 'for rent price'] and found_object.lower() == 'price on request':
+                found_object = 0
+            else:
+                found_object = int(found_object)
         elif type_cast == 'bool':
             found_object = 'No' if found_object.lower() == 'no' or 'not present' in found_object.lower() else 'Yes' if found_object.lower() == 'yes' or 'present' in found_object.lower() else 'Unknown'
     except NoSuchElementException as nsex:
