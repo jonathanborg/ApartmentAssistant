@@ -301,13 +301,8 @@ def __get_listing_content(url, page):
     details = find_element(page, "div", class_name="object-primary", friendly_name="All Details")
     title = find_element(details, "span", class_name="object-header__title", friendly_name="Title", type_cast="str", attribute='text')
     if title == '':
-        return Listing(title='', city='', location='', zip_code='', price='', description='', url=url,
-        number_of_rooms='', for_rent_price='', sub_description='', offered_since='', status='', acceptance='', 
-        contract_duration='', deposit='', interior='', upkeep='', surface_area='', dwelling_type='', 
-        situations='', service_costs='', plot_size='', volume='', property_types='', construction_type='', 
-        construction_period='', number_of_bedrooms='', number_of_bathrooms='', number_of_floors='', 
-        balcony='', garden='', energy_level='', parking='', listing_type='', garage='', insulations='', storage='', 
-        smoking_allowed='', pets_allowed='', broker_link='', broker='', source_found=Sources.Funda, photo_id='')
+        return Listing(title='', price='', city='',zip_code='', url=url, offered_since='', acceptance='',
+        contract_duration='', source_found=Sources.Funda)
 
     print(title)  
     location = find_element(details, "span", class_name="object-header__subtitle", friendly_name="Location", type_cast="str", attribute="text")
@@ -322,80 +317,123 @@ def __get_listing_content(url, page):
     location = location.split('/')[1].title()
     
     # Headers
-    price_details_available, building_details_available, surface_details_available, layout_details_available, energy_details_available, exterior_details_available, parking_details_available, garage_details_available = [False] * 8
+    price_details_available = False
 
     # Individual Features
     price, deposit, offered_since, contract_duration, status, acceptance = [''] * 6
-    property_types, dwelling_type, construction_type, construction_period, interior = [''] * 5
-    surface_area, plot_size, volume = [''] * 3
-    number_of_rooms, number_of_bedrooms, number_of_bathrooms, number_of_floors, facilities = [''] * 5
-    energy_level, insulations, heating, hot_water = [''] * 4
-    sub_description, garden, balcony = [''] * 3
-    parking, garage = [''] * 2
-
     data_tables  = details.find_all('dl', {'class': 'object-kenmerken-list'})
     for dl in data_tables:
         header_name = dl.find_previous_sibling('h3').text
         if header_name in ['Overdracht', 'Transfer of ownership']:
             price_details_available = True
             price, deposit, offered_since, contract_duration, status, acceptance = __get_price_details(dl)
-        elif header_name in ['Bouw', 'Construction']:
-            building_details_available = True
-            property_types, dwelling_type, construction_type, construction_period, interior, parking = __get_building_details(dl)
-        elif header_name in ['Oppervlakten en inhoud', 'Surface areas and volume']:
-            surface_details_available = True
-            surface_area, plot_size, volume = __get_surface_area(dl)
-        elif header_name in ['Indeling', 'Layout']:
-            layout_details_available = True
-            number_of_rooms, number_of_bedrooms, number_of_bathrooms, number_of_floors, facilities = __get_layout(dl)
-        elif header_name in ['Energie', 'Energy']:
-            energy_details_available = True
-            energy_level, insulations, heating, hot_water = __get_energy(dl)
-        elif header_name in ['Buitenruimte', 'Exterior space']:
-            exterior_details_available = True
-            sub_description, garden, balcony = __get_exterior_space(dl)
-        elif header_name in ['Parkeergelegenheid', 'Parking']:
-            parking_details_available = True
-            parking = __get_parking(dl)
-        elif header_name in ['Garage']:
-            garage_details_available = True
-            garage = __get_garage(dl)
-        else:
-            print(f' + Additional Header found: {header_name}')
     
     if not price_details_available: print(f'Price Header are not found')
-    if not building_details_available: print(f'Building Header are not found')
-    if not surface_details_available: print(f'Surface Header are not found')
-    if not layout_details_available: print(f'Layout Header are not found')
-    if not energy_details_available: print(f'Energy Header are not found')
-    if not exterior_details_available: print(f'Exterior Header are not found')
-    if not parking_details_available: print(f'Parking Header are not found')
+    return Listing(title=title, price=price, city=city, zip_code=zip_code, url=url, offered_since=offered_since,
+    acceptance=acceptance, contract_duration=contract_duration, source_found=Sources.Funda)
 
-    brokers = page.find_all("a", {'class':"object-contact-aanbieder-link"})
-    broker=[]
-    broker_link=[]
-    for b in brokers:
-        broker.append(b.text)
-        broker_link.append(f"{url.split('.nl/')[0]}.nl{b.get('href')}")
+# def __get_listing_content(url, page):
+#     # Map items into variables
+#     details = find_element(page, "div", class_name="object-primary", friendly_name="All Details")
+#     title = find_element(details, "span", class_name="object-header__title", friendly_name="Title", type_cast="str", attribute='text')
+#     if title == '':
+#         return Listing(title='', price='', city='',zip_code='', url=url, offered_since='', acceptance='',
+#         contract_duration='', source_found=Sources.Funda)
+#         # return Listing(title='', city='', location='', zip_code='', price='', description='', url=url,
+#         # number_of_rooms='', for_rent_price='', sub_description='', offered_since='', status='', acceptance='', 
+#         # contract_duration='', deposit='', interior='', upkeep='', surface_area='', dwelling_type='', 
+#         # situations='', service_costs='', plot_size='', volume='', property_types='', construction_type='', 
+#         # construction_period='', number_of_bedrooms='', number_of_bathrooms='', number_of_floors='', 
+#         # balcony='', garden='', energy_level='', parking='', listing_type='', garage='', insulations='', storage='', 
+#         # smoking_allowed='', pets_allowed='', broker_link='', broker='', source_found=Sources.Funda, photo_id='')
 
-    broker = "; ".join(broker)
-    broker_link = "; ".join(broker_link)
+#     print(title)  
+#     location = find_element(details, "span", class_name="object-header__subtitle", friendly_name="Location", type_cast="str", attribute="text")
+#     zip_regex = re.compile(r"\d{4}\s([A-Z]{2})\s")
+#     zip_code = zip_regex.search(location).group(0)
+#     city = location.replace(zip_code, '').strip('(').strip(')')
+#     zip_code = zip_code.replace(' ', '')
 
-    #Yet to be mapped:
-    for_rent_price, upkeep, situations, service_costs, listing_type, storage, smoking_allowed, pets_allowed, photo_id = [''] * 9
+#     description = find_element(details, "div", class_name="object-description-body", friendly_name="Description", type_cast="str", attribute="text", remove_strs=[('\n',' - '), ('\t',' ')])
+#     neighborhood_section = find_element(page, 'div', class_name="object-buurt", friendly_name="Neighborhood")
+#     location = find_element(neighborhood_section, 'app-insights-preview-card', class_name=None, friendly_name="Neighborhood Name", custom_name="identifier", type_cast="str", attribute="text")
+#     location = location.split('/')[1].title()
+    
+#     # Headers
+#     price_details_available, building_details_available, surface_details_available, layout_details_available, energy_details_available, exterior_details_available, parking_details_available, garage_details_available = [False] * 8
 
-    listing = Listing(
-        title=title, city=city, location=location, zip_code=zip_code, price=price, description=description, url=url,
-        number_of_rooms=number_of_rooms, for_rent_price=for_rent_price, sub_description=sub_description, 
-        offered_since=offered_since, status=status, acceptance=acceptance, contract_duration=contract_duration, 
-        deposit=deposit, interior=interior, upkeep=upkeep, surface_area=surface_area, dwelling_type=dwelling_type, 
-        situations=situations, service_costs=service_costs, plot_size=plot_size, volume=volume, 
-        property_types=property_types, construction_type=construction_type, construction_period=construction_period, 
-        number_of_bedrooms=number_of_bedrooms, number_of_bathrooms=number_of_bathrooms, number_of_floors=number_of_floors, 
-        balcony=balcony, garden=garden, energy_level=energy_level, parking=parking, listing_type=listing_type, 
-        garage=garage, insulations=insulations, storage=storage, smoking_allowed=smoking_allowed, 
-        pets_allowed=pets_allowed, broker_link=broker_link, broker=broker, source_found=Sources.Funda, photo_id=photo_id)
-    return listing
+#     # Individual Features
+#     price, deposit, offered_since, contract_duration, status, acceptance = [''] * 6
+#     property_types, dwelling_type, construction_type, construction_period, interior = [''] * 5
+#     surface_area, plot_size, volume = [''] * 3
+#     number_of_rooms, number_of_bedrooms, number_of_bathrooms, number_of_floors, facilities = [''] * 5
+#     energy_level, insulations, heating, hot_water = [''] * 4
+#     sub_description, garden, balcony = [''] * 3
+#     parking, garage = [''] * 2
+
+#     data_tables  = details.find_all('dl', {'class': 'object-kenmerken-list'})
+#     for dl in data_tables:
+#         header_name = dl.find_previous_sibling('h3').text
+#         if header_name in ['Overdracht', 'Transfer of ownership']:
+#             price_details_available = True
+#             price, deposit, offered_since, contract_duration, status, acceptance = __get_price_details(dl)
+#         elif header_name in ['Bouw', 'Construction']:
+#             building_details_available = True
+#             property_types, dwelling_type, construction_type, construction_period, interior, parking = __get_building_details(dl)
+#         elif header_name in ['Oppervlakten en inhoud', 'Surface areas and volume']:
+#             surface_details_available = True
+#             surface_area, plot_size, volume = __get_surface_area(dl)
+#         elif header_name in ['Indeling', 'Layout']:
+#             layout_details_available = True
+#             number_of_rooms, number_of_bedrooms, number_of_bathrooms, number_of_floors, facilities = __get_layout(dl)
+#         elif header_name in ['Energie', 'Energy']:
+#             energy_details_available = True
+#             energy_level, insulations, heating, hot_water = __get_energy(dl)
+#         elif header_name in ['Buitenruimte', 'Exterior space']:
+#             exterior_details_available = True
+#             sub_description, garden, balcony = __get_exterior_space(dl)
+#         elif header_name in ['Parkeergelegenheid', 'Parking']:
+#             parking_details_available = True
+#             parking = __get_parking(dl)
+#         elif header_name in ['Garage']:
+#             garage_details_available = True
+#             garage = __get_garage(dl)
+#         else:
+#             print(f' + Additional Header found: {header_name}')
+    
+#     if not price_details_available: print(f'Price Header are not found')
+#     if not building_details_available: print(f'Building Header are not found')
+#     if not surface_details_available: print(f'Surface Header are not found')
+#     if not layout_details_available: print(f'Layout Header are not found')
+#     if not energy_details_available: print(f'Energy Header are not found')
+#     if not exterior_details_available: print(f'Exterior Header are not found')
+#     if not parking_details_available: print(f'Parking Header are not found')
+
+#     brokers = page.find_all("a", {'class':"object-contact-aanbieder-link"})
+#     broker=[]
+#     broker_link=[]
+#     for b in brokers:
+#         broker.append(b.text)
+#         broker_link.append(f"{url.split('.nl/')[0]}.nl{b.get('href')}")
+
+#     broker = "; ".join(broker)
+#     broker_link = "; ".join(broker_link)
+
+#     #Yet to be mapped:
+#     for_rent_price, upkeep, situations, service_costs, listing_type, storage, smoking_allowed, pets_allowed, photo_id = [''] * 9
+
+#     listing = Listing(
+#         title=title, city=city, location=location, zip_code=zip_code, price=price, description=description, url=url,
+#         number_of_rooms=number_of_rooms, for_rent_price=for_rent_price, sub_description=sub_description, 
+#         offered_since=offered_since, status=status, acceptance=acceptance, contract_duration=contract_duration, 
+#         deposit=deposit, interior=interior, upkeep=upkeep, surface_area=surface_area, dwelling_type=dwelling_type, 
+#         situations=situations, service_costs=service_costs, plot_size=plot_size, volume=volume, 
+#         property_types=property_types, construction_type=construction_type, construction_period=construction_period, 
+#         number_of_bedrooms=number_of_bedrooms, number_of_bathrooms=number_of_bathrooms, number_of_floors=number_of_floors, 
+#         balcony=balcony, garden=garden, energy_level=energy_level, parking=parking, listing_type=listing_type, 
+#         garage=garage, insulations=insulations, storage=storage, smoking_allowed=smoking_allowed, 
+#         pets_allowed=pets_allowed, broker_link=broker_link, broker=broker, source_found=Sources.Funda, photo_id=photo_id)
+#     return listing
 
 
 def scrape_listing_funda(url, see_window, procnum, return_dict):

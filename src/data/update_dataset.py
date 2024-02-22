@@ -28,17 +28,17 @@ def one_time_sheets_import(file_name):
 def get_previous_listings() -> pd.DataFrame:
     active_listings = google_call(call_type=CallType.Read, sheet_id=SPREADSHEET_ID, sheet_range=f"{SHEET_REVIEW_NAME}!{sheet_range_split[0]}1:{sheet_range_split[1]}")
     dated_listings = google_call(call_type=CallType.Read, sheet_id=SPREADSHEET_ID, sheet_range=f"{SHEET_DEAD_NAME}!{sheet_range_split[0]}1:{sheet_range_split[1]}")
-    old_listings, new_listings = [], []
+    old_listings, new_listings = [], None
     if len(active_listings) > 0:
         headers = active_listings.pop(0)
         act_rows = pd.DataFrame(active_listings, columns=headers)
-        old_listings += act_rows[~act_rows['Date Found'].isna()]['Url'].tolist()
-        new_listings = act_rows[act_rows['Date Found'].isna()]['Url'].tolist()
+        old_listings += act_rows[act_rows['Date Found'] != '']['URL'].tolist()
+        new_listings = act_rows[act_rows['Date Found'] == '']['URL'].tolist()
     if len(dated_listings) > 0:
         headers = dated_listings.pop(0)
-        old_listings += pd.DataFrame(dated_listings, columns=headers)['Url'].tolist()
+        old_listings += pd.DataFrame(dated_listings, columns=headers)['URL'].tolist()
     if len(old_listings) == 0:
-        return None, None, active_listings, dated_listings
+        old_listings = None
     return old_listings, new_listings, active_listings, dated_listings
 
 
@@ -131,11 +131,11 @@ if __name__ == '__main__':
     get_new_data = True
     details={
         'setup':{
-            'price':1600, 
+            'price':1750, 
             'new_data':get_new_data,
             'save_file': save_local_files,
             'see_selenium':see_selenium
-            },
+        },
         'localities':{
             Locations.Dordrecht.name: 2,
             Locations.Roosendaal.name: 5,

@@ -34,7 +34,8 @@ def get_website_data(source: Sources, locations: dict, max_price: int, max_pages
         raise ex
     if old_listings_urls is not None:
         listing_urls = list(set(listing_urls) - set(old_listings_urls))
-
+    else:
+        listing_urls = list(set(listing_urls))
     logger.info(f'---- Extracting {len(listing_urls)} New Listings')
     listing_data = __get_website_listing_details(listing_urls=listing_urls, target_func=target_func, see_window=see_window)
     return pd.DataFrame(listing_data, columns=Listing.header().split(', '))
@@ -77,7 +78,7 @@ def __get_website_listings(source: Sources, location: str, max_price: int, max_p
 
 def __get_main_website_details(source: Sources, location: str, max_price: int, max_pages: int, max_radius: int, use_selenium: bool, see_window: bool):
     if source == Sources.Pararius:
-        website_url = f"{HOME_PAGE_PARARIUS}/apartments/{location.lower()}/0-{max_price}"
+        website_url = f"{HOME_PAGE_PARARIUS}/apartments/{location.lower()}/0-{max_price}/radius-{max_radius}"
         page_ext = "/page-"
         listings_selector = '[class$="listing-search-item__link--title"'
         pagination_link_selector = "pagination__link"
